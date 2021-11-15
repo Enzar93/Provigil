@@ -11,7 +11,7 @@ coverY: 0
 
 Provigil is a simple keylogger wrote in python which uses process injection to hide it self. The Provigil project is split in two modules : the first one is **Provigil.py** which contains the keylogger and the second one is **ProLoader.py **whose purpose is to inject the keylogger (Provigil.py) into a process.
 
-![Project architecture](.gitbook/assets/image.png)
+![Project architecture](<.gitbook/assets/image (1).png>)
 
 There is differents techniques to inject malicious code into a victim process such as : _Extra Windows Memory injection, Classic DLL injection_, ect.. Provigil uses **Process Hollowing** technique. The latter consists to hollow out legitimate code from the target process' memory and replaces it with a malicious executable.
 
@@ -118,3 +118,9 @@ We debug the process thanks WinDbg to inspect the memory. Thus, we can see that 
 ![ProLoader memory process](<.gitbook/assets/image (2).png>)
 
 ## Step 2 : Get Victim Process' Address
+
+
+
+![ProLoader logs](<.gitbook/assets/image (6).png>)
+
+![](.gitbook/assets/image.png)
